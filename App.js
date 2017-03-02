@@ -1,267 +1,200 @@
 // R Cook
 // v1.0.1
-// 2017-02-21
+// 2017-03-02
 // Template script to load a viewport with 5 panels
-
 Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
+    myFetch: [],
+    myCols: [],
+    // Filter theFetch
+    // 0 -> Hide columns
+    // 1 -> Add Column
+    // 1/0 -> Both will be fetched from the query
+    dataList: [
+        [1, 'FormattedID'],
+        [1, 'Name'],
+        [1, 'Project'],
+        [1, 'Owner'],
+        [1, 'CreatedDate'],
+        [1, 'DisplayColor'],
+        [1, 'ScheduleState'],
+        [1, 'Blocked'],
+        [1, 'DirectChildrenCount'],
+        [1, 'Defects'],
+        [1, 'Iteration'],
+        [1, 'PlanEstimate'],
+        [1, 'Predecessors'],
+        [1, 'Successors'],
+        [1, 'Release'],
+        [1, 'TestCases'],
+    ],
+
+    items: [ // pre-define the general layout of the app; the skeleton (ie. header, content, footer)
+        {
+            xtype: 'container', // this container lets us control the layout of the pulldowns; they'll be added below
+            itemId: 'pulldown-container',
+            margin: '5 5 5 5',
+            layout: {
+                type: 'hbox', // 'horizontal' layout
+                align: 'stretch'
+            }
+        }, {
+            xtype: 'box',
+            id: 'myTarget',
+            autoScroll: true,
+            margin: '10 5 5 10',
+            width: '100%',
+            style: {
+                borderTop: '1'
+            },
+            autoEl: {
+                tag: 'div',
+                cls: 'myContent',
+                html: '',
+            },
+            listeners: {
+                add: function () {
+                    console.log('@ Launch Added Content Box');
+                },
+                scope: this
+            },
+            flex: 1
+        }
+    ],
     launch: function () {
-        console.log('f launch');
-        var me = this; // <- Personal preference but I like me rather than this;)
-        me._createLayout();
-    },
-    _createLayout: function () {
-        console.log('f _createLayout');
+        console.log('\033[2J'); // clear the console
         var me = this;
-        var x = 0;
+        var xData1 = this.getContext().getUser();
+        var xData2 = this.getContext().getProject();
+        var xData3 = this.getContext().getWorkspace();
+        var xData4 = this.getContext().getSubscription();
+        //var gEpros = App.Emailer; // shorten global property string
+        // var gRpros = App.Runtime; // shorten global property string
+        for (var j = 0; j < this.dataList.length; j++) {
+            if (this.dataList[j][0] === 1) {
+                this.myFetch.push(this.dataList[j][1]);
+                this.myCols.push(this.dataList[j][1]);
+                console.log('@ _launch Filter Fetch (+) ', this.dataList[j][1]);
+            }
+            if (this.dataList[j][0] === 0) {
+                this.myFetch.push(this.dataList[j][1]);
+                console.log('@ _launch Filter Fetch (-) ', this.dataList[j][1]);
+            }
+        }
 
-        me._loadData();
-
-        // We are build ing this layout 
-        // |""""""""|""""""""""""""""""""""""""""|""""""""|
-        // | West   | North                      | East   |
-        // |        |""""""""""""""""""""""""""""|        |
-        // |        | Center                     |        |
-        // |        |""""""""""""""""""""""""""""|        |
-        // |        | South                      |        |
-        // |""""""""|""""""""""""""""""""""""""""|""""""""|
-        /*
-                this.viewport = Ext.create('Ext.container.Viewport', {
-                    extend: 'Ext.app.Controller',
-                    layout: 'border',
-                    items: [{
-                        region: 'north',
-                        xtype: 'panel',
-                        itemId: 'north',
-                        id: 'viewPortnorth',
-                        height: 120,
-                        minHeight: 120,
-                        html: 'South',
-                        collapsible: true,
-                        layout: 'fit'
-                    }, {
-                        region: 'center',
-                        xtype: 'panel',
-                        itemId: 'center',
-                        autoScroll: 'true',
-                        id: 'viewPortCenter',
-                        layout: 'fit'
-                    }, ],
+        var layout = Ext.create('Ext.container.Container', {
+            layout: 'fit',
+            align: 'stretch',
+            height: '100%',
+            layoutConfig: {
+                align: 'stretch',
+            },
+            items: [{
+                xtype: 'panel',
+                width: 300,
+                border: false,
+                layout: 'hbox',
+                html: '',
+                id: 'myHeader',
+                itemId: 'header',
+                height: 300,
+                listeners: {
+                    afterrender: function () {
+                        console.log('@ Launch Added Panel');
+                        me._loadData();
+                    },
+                    scope: me
+                },
+                items: [{
+                    xtype: 'button',
+                    text: 'Support',
+                    margin: '5 5 5 20',
                     listeners: {
-                        beforerender: function () {
-                            // Triggers before the parent viewport loads
-                            console.log('Viewport Loading');
-                        },
-                        afterrender: function () {
-                            // Triggers after the viewport & all of its panels have loaded
-                            console.log('Viewport Rendered');
-                            me._loadData();
-                        },
-                        add: function () {
-                            // Counts in our viewports regions as they load
-                            x++;
-                            console.log('Viewport Rendering [ #', x, ']');
+                        afterrender: function (v) {
+                            v.el.on('click', function () {
+                                var email = new gEpros._emailer(MySharedData.supportArray, xData1, xData2, xData3, xData4);
+                                console.log('@ Launch Added Support Button');
+                            });
                         },
                         scope: me
+                    }
+                }],
+            }, {
+                xtype: 'box',
+                id: 'myTarget',
+                autoScroll: true,
+                margin: '10 5 5 10',
+                width: '100%',
+                style: {
+                    borderTop: '1'
+                },
+                autoEl: {
+                    tag: 'div',
+                    cls: 'myContent',
+                    html: '',
+                },
+                listeners: {
+                    add: function () {
+                        console.log('@ Launch Added Content Box');
                     },
-                });
-                x = null;
-        */
-        console.log('finished');
-
-
-
-
-
-
+                    scope: me
+                },
+                flex: 1
+            }]
+        });
+        this.add(layout);
     },
     _getFilters: function () {
-
         var myFilter = Ext.create('Rally.data.wsapi.Filter', {
             property: 'Feature',
-            operation: '!=',
+            operation: '=',
             value: null
         });
-
         return myFilter;
-
-        // EXTRA EXAMPLE showing AND + OR combination; (commented code only)
-        /*
-      var blockedFilter = Ext.create('Rally.data.wsapi.Filter', {
-              property: 'Blocked',
-              operation: '=',
-              value: true
-      });
- 
-      var iterationSeverityFilter = iterationFilter.and(severityFilter);
-      var myFilters = blockedFilter.or(iterationSeverityFilter);
-
-      return myFilters;
-      */
     },
-
-    // Get data from Rally
     _loadData: function () {
         var me = this;
-        // filters to send to Rally during the store load
         var myFilters = this._getFilters();
-
         console.log('my filter', myFilters.toString());
-
-        // if store exists, just load new data
-        if (me.defectStore) {
+        if (me.userStoryStore) {
             console.log('store exists');
-            me.defectStore.setFilter(myFilters);
-            me.defectStore.load();
-
-            // create store
+            me.userStoryStore.setFilter(myFilters);
+            me.userStoryStore.load();
         } else {
             console.log('creating store');
-            me.defectStore = Ext.create('Rally.data.wsapi.Store', { // create defectStore on the App (via this) so the code above can test for it's existence!
+            me.userStoryStore = Ext.create('Rally.data.wsapi.Store', { // create 
                 model: 'User Story',
-                autoLoad: true, // <----- Don't forget to set this to true! heh
+                limit: Infinity,
+                autoLoad: true,
                 filters: myFilters,
                 listeners: {
                     load: function (myStore, myData, success) {
                         console.log('got data!', myStore, myData);
-                        if (!me.defectGrid) { // only create a grid if it does NOT already exist
-                            me._createGrid(myStore); // if we did NOT pass scope:this below, this line would be incorrectly trying to call _createGrid() on the store which does not exist.
+                        if (!me.userStoryGrid) {
+                            me._createGrid(myStore);
                         }
                     },
-                    scope: me // This tells the wsapi data store to forward pass along the app-level context into ALL listener functions
+                    scope: me
                 },
-                fetch: ['FormattedID', 'Name', 'Feature', 'Parent'] // Look in the WSAPI docs online to see all fields available!
+                fetch: this.myFetch
             });
         }
     },
-
-    // Create and Show a Grid of given defect
-    _createGrid: function (myDefectStore) {
-
-        var me = this;
-
-        var defectGrid = Ext.create('Rally.ui.grid.Grid', {
-            store: myDefectStore,
-            columnCfgs: [ // Columns to display; must be the same names specified in the fetch: above in the wsapi data store
-                'FormattedID', 'Name', 'Feature', 'Parent'
-            ]
-            
+    _createGrid: function (myuserStoryStore) {
+        console.log(this.myCols);
+        var userStoryGrid = Ext.create('Rally.ui.grid.Grid', {
+            store: myuserStoryStore,
+            columnCfgs: this.myCols
         });
-        //this.viewport.getComponent('center').add(me.defectGrid);
-        //me.add(me.defectGrid); // add the grid Component to the app-level Container (by doing this.add, it uses the app container)
-
-
         var viewport = Ext.create('Ext.container.Viewport', {
             layout: 'fit',
-            items: [defectGrid]
+            items: [userStoryGrid]
         });
+        console.log('GRID ', this.myFetch);
+        Ext.fly('myTarget').update(viewport);
+
+
 
     },
-
-    getColumnCfgs: function () {
-        var app = this;
-        config_obj = Ext.JSON.decode(this.layoutConfig);
-        // I am sure there are better ways to do this, but it works....
-        var fieldList = [];
-        for (key in config_obj.fields) {
-            if (config_obj.fields[key].view) {
-                if (config_obj.fields[key].Name === 'Parent') {
-                    fieldList.push({
-                        dataIndex: 'Parent',
-                        text: 'Business Outcome',
-                        renderer: function (field, cell, record, row, column, view) {
-                            var nclass = ' class=applink';
-                            var name = '<-- Click to Set -->';
-                            if (record.data.Parent) {
-                                name = record.data.Parent._refObjectName;
-                            } else {
-                                nclass = ' class=errorbar';
-                            }
-                            return '<div' + nclass + '>' + name + '</div>';
-                        },
-                        listeners: {
-                            click: function (view, cellObject, row, column, event, record, rowObject) {
-                                Ext.create('Rally.ui.dialog.ArtifactChooserDialog', {
-                                    artifactTypes: [app.parentModelName],
-                                    autoShow: true,
-                                    title: 'Choose a ' + app.parentModelName,
-                                    listeners: {
-                                        artifactchosen: function (dialog, selectedRecord) {
-                                            record.set('Parent', selectedRecord.get('_ref'));
-                                            record.save().then({
-                                                success: function (a, b, c, d, e, f, g) {
-                                                    Rally.ui.notify.Notifier.show({
-                                                        message: 'Item: ' + record.get('FormattedID') + ' updated'
-                                                    });
-                                                },
-                                                failure: function (error) {
-                                                    Rally.ui.notify.Notifier.showError({
-                                                        message: 'Failed to save item: ' + record.get('FormattedID')
-                                                    });
-                                                }
-                                            })
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                    });
-                } else {
-                    fieldList.push(config_obj.fields[key].Name);
-                }
-            }
-        }
-        //this.logger.log('gridColumnCfgObj', fieldList);
-        var clmns = [];
-        if (!this.getSetting('enableFormattedID')) {
-            clmns.push({
-                dataIndex: 'FormattedID',
-                text: 'ID',
-                renderer: function (item, row, record, arg4, arg5) {
-                    var tpl = new Ext.XTemplate(
-                        '<tpl for=".">',
-                        '<span class="icon-eye-open">',
-                        '</span>',
-                        '<span class="applink" id={[this._getLinkId(values)]}>',
-                        '{[this._getPopUp()]}',
-                        '</span>',
-                        '</tpl>', {
-                            _getLinkId: function (x, y, z) {
-                                var result = Ext.id();
-                                Ext.Function.defer(this.addListener, 10, this, [result]);
-                                return result;
-                            },
-                            _getPopUp: function (w, x, y, z) {
-                                return item;
-                            },
-                            addListener: function (id) {
-                                var config_obj = Ext.JSON.decode(app.layoutConfig);
-                                Ext.get(id).on('click', function () {
-                                    app._buildForm(app.model, config_obj.fields, record);
-                                });
-                            }
-                        });
-                    return tpl.apply(record)
-                }
-            });
-        } else {
-            clmns.push('FormattedID');
-        }
-        if (this.getSetting('approvalField')) {
-            clmns.push({
-                dataIndex: 'Project',
-                text: 'Category',
-                renderer: function (item) {
-                    return item._refObjectName;
-                }
-            });
-        }
-        clmns = clmns.concat(fieldList);
-        //this.logger.log('gridColumnCfgs', clmns);
-        return clmns;
-    },
-
-
-
 });

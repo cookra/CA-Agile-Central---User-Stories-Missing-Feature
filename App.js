@@ -30,7 +30,6 @@ Ext.define('CustomApp', {
         [1, 'TestCases'],
     ],
     launch: function () {
-        this._mask();
         console.log('\033[2J'); // clear the console
         var me = this;
         for (var j = 0; j < this.dataList.length; j++) {
@@ -44,49 +43,6 @@ Ext.define('CustomApp', {
                 console.log('@ _launch Filter Fetch (-) ', this.dataList[j][1]);
             }
         }
-        this._loadData();
-    },
-    _getFilters: function () {
-        var myFilter = Ext.create('Rally.data.wsapi.Filter', {
-            property: 'Feature',
-            operation: '=',
-            value: null
-        });
-        return myFilter;
-    },
-    _loadData: function () {
-        var me = this;
-        var myFilters = this._getFilters();
-        console.log('my filter', myFilters.toString());
-        if (me.userStoryStore) {
-            console.log('store exists');
-            me.userStoryStore.setFilter(myFilters);
-            me.userStoryStore.load();
-        } else {
-            console.log('creating store');
-            me.userStoryStore = Ext.create('Rally.data.wsapi.Store', { // create 
-                model: 'User Story',
-                limit: 200,
-                autoLoad: true,
-                filters: myFilters,
-                listeners: {
-                    load: function (myStore, myData, success) {
-                        console.log('got data!', myStore, myData);
-                        if (!me.userStoryGrid) {
-                            me._createGrid(myStore, myData);
-                        }
-                    },
-                    scope: me
-                },
-                fetch: this.myFetch
-            });
-        }
-    },
-
-    _mask: function () {
-        //this.add(Ext.create('App.Loader')._build('bar'));
-    },
-    _createGrid: function (myStore, myData) {
         var xData1 = this.getContext().getUser();
         var xData2 = this.getContext().getProject();
         var xData3 = this.getContext().getWorkspace();
@@ -102,8 +58,9 @@ Ext.define('CustomApp', {
 
 
         //PbarclaysColours_5: ['#145FAC', '#437EA0', '#00AEEF', '#FFF', '#FFA000'],
+        var container = Ext.create('Ext.container.Container', {
 
-        var viewport = Ext.create('Ext.container.Viewport', {
+            xtype: 'Viewport',
             items: [{
                 region: 'north',
                 collapsible: true,
@@ -174,26 +131,11 @@ Ext.define('CustomApp', {
                 layout: 'fit',
                 flex: 1,
                 items: [{
-
                     xtype: 'tabpanel',
+                    deferredRender: true,
                     width: '100%',
                     items: [{
-                        title: 'User Stories',
-                        width: '100%',
-                        cls: 'fixTabMargins',
-                        tabConfig: {
-                            style: {
-                                background: '#808080',
-                            }
-                        },
-                        items: [{
-                            xtype: 'rallygrid',
-                            store: myStore,
-                            height: '100%',
-                            columnCfgs: this.myCols,
-                        }]
-                    }, {
-                        title: 'Features',
+                        title: 'A',
                         width: '100%',
                         html: 'X',
                         bodyStyle: colour_Background + bodyStyle,
@@ -203,8 +145,16 @@ Ext.define('CustomApp', {
                                 background: '#808080',
                             }
                         },
+                        listeners: {
+                            'activate': function () {
+                                console.log('test');
+                                this._loadData();
+                                //store2.load();
+                            },
+                            scope:this
+                        }
                     }, {
-                        title: 'Features',
+                        title: 'A',
                         width: '100%',
                         html: 'X',
                         bodyStyle: colour_Background + bodyStyle,
@@ -212,46 +162,68 @@ Ext.define('CustomApp', {
                         tabConfig: {
                             style: {
                                 background: '#808080',
-                            }
+                            },
                         },
-                    }, {
-                        title: 'Business outcomes',
-                        width: '100%',
-                        html: 'X',
-                        bodyStyle: colour_Background + bodyStyle,
-                        cls: 'fixTabMargins',
-                        tabConfig: {
-                            style: {
-                                background: '#808080',
-                            }
-                        },
-                    }, {
-                        title: 'Portfolio Objectives',
-                        width: '100%',
-                        html: 'X',
-                        bodyStyle: colour_Background + bodyStyle,
-                        cls: 'fixTabMargins',
-                        tabConfig: {
-                            style: {
-                                background: '#808080',
-                            }
-                        },
-                    }, {
-                        title: 'Strategic Objectives',
-                        width: '100%',
-                        html: 'X',
-                        bodyStyle: colour_Background + bodyStyle,
-                        cls: 'fixTabMargins',
-                        tabConfig: {
-                            style: {
-                                background: '#808080',
-                            }
-                        },
+                        listeners: {
+                            'activate': function () {
+                                console.log('test');
+                                this._loadData();
+                                //store2.load();
+                            },
+                            scope:this
+                        }
                     }],
 
 
                 }]
             }]
         });
+        this.add(container);
+        this._mask();
+    },
+    _getFilters: function () {
+        var myFilter = Ext.create('Rally.data.wsapi.Filter', {
+            property: 'Feature',
+            operation: '=',
+            value: null
+        });
+        return myFilter;
+    },
+    _loadData: function () {
+        var me = this;
+        var myFilters = this._getFilters();
+        console.log('my filter', myFilters.toString());
+        if (me.userStoryStore) {
+            console.log('store exists');
+            me.userStoryStore.setFilter(myFilters);
+            me.userStoryStore.load();
+        } else {
+            console.log('creating store');
+            me.userStoryStore = Ext.create('Rally.data.wsapi.Store', { // create 
+                model: 'User Story',
+                limit: 200,
+                autoLoad: true,
+                filters: myFilters,
+                listeners: {
+                    load: function (myStore, myData, success) {
+                        console.log('got data!', myStore, myData);
+                        if (!me.userStoryGrid) {
+                            me._createGrid(myStore, myData);
+                        }
+                    },
+                    scope: me
+                },
+                fetch: this.myFetch
+            });
+        }
+    },
+
+
+    _mask: function () {
+        //Ext.fly('myInfoPanel').update(Ext.create('App.Loader')._build('bar'));
+        //Ext.fly('myTarget').update(Ext.create('App.Loader')._build('wave'));
+    },
+    _createGrid: function (myStore, myData) {
+
     },
 });

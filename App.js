@@ -29,48 +29,10 @@ Ext.define('CustomApp', {
         [1, 'Release'],
         [1, 'TestCases'],
     ],
-
-    items: [ // pre-define the general layout of the app; the skeleton (ie. header, content, footer)
-        {
-            xtype: 'container', // this container lets us control the layout of the pulldowns; they'll be added below
-            itemId: 'pulldown-container',
-            margin: '5 5 5 5',
-            layout: {
-                type: 'hbox', // 'horizontal' layout
-                align: 'stretch'
-            }
-        }, {
-            xtype: 'box',
-            id: 'myTarget',
-            autoScroll: true,
-            margin: '10 5 5 10',
-            width: '100%',
-            style: {
-                borderTop: '1'
-            },
-            autoEl: {
-                tag: 'div',
-                cls: 'myContent',
-                html: '',
-            },
-            listeners: {
-                add: function () {
-                    console.log('@ Launch Added Content Box');
-                },
-                scope: this
-            },
-            flex: 1
-        }
-    ],
     launch: function () {
+        this._mask();
         console.log('\033[2J'); // clear the console
         var me = this;
-        var xData1 = this.getContext().getUser();
-        var xData2 = this.getContext().getProject();
-        var xData3 = this.getContext().getWorkspace();
-        var xData4 = this.getContext().getSubscription();
-        //var gEpros = App.Emailer; // shorten global property string
-        // var gRpros = App.Runtime; // shorten global property string
         for (var j = 0; j < this.dataList.length; j++) {
             if (this.dataList[j][0] === 1) {
                 this.myFetch.push(this.dataList[j][1]);
@@ -82,68 +44,7 @@ Ext.define('CustomApp', {
                 console.log('@ _launch Filter Fetch (-) ', this.dataList[j][1]);
             }
         }
-
-        var layout = Ext.create('Ext.container.Container', {
-            layout: 'fit',
-            align: 'stretch',
-            height: '100%',
-            layoutConfig: {
-                align: 'stretch',
-            },
-            items: [{
-                xtype: 'panel',
-                width: 300,
-                border: false,
-                layout: 'hbox',
-                html: '',
-                id: 'myHeader',
-                itemId: 'header',
-                height: 300,
-                listeners: {
-                    afterrender: function () {
-                        console.log('@ Launch Added Panel');
-                        me._loadData();
-                    },
-                    scope: me
-                },
-                items: [{
-                    xtype: 'button',
-                    text: 'Support',
-                    margin: '5 5 5 20',
-                    listeners: {
-                        afterrender: function (v) {
-                            v.el.on('click', function () {
-                                var email = new gEpros._emailer(MySharedData.supportArray, xData1, xData2, xData3, xData4);
-                                console.log('@ Launch Added Support Button');
-                            });
-                        },
-                        scope: me
-                    }
-                }],
-            }, {
-                xtype: 'box',
-                id: 'myTarget',
-                autoScroll: true,
-                margin: '10 5 5 10',
-                width: '100%',
-                style: {
-                    borderTop: '1'
-                },
-                autoEl: {
-                    tag: 'div',
-                    cls: 'myContent',
-                    html: '',
-                },
-                listeners: {
-                    add: function () {
-                        console.log('@ Launch Added Content Box');
-                    },
-                    scope: me
-                },
-                flex: 1
-            }]
-        });
-        this.add(layout);
+        this._loadData();
     },
     _getFilters: function () {
         var myFilter = Ext.create('Rally.data.wsapi.Filter', {
@@ -165,14 +66,14 @@ Ext.define('CustomApp', {
             console.log('creating store');
             me.userStoryStore = Ext.create('Rally.data.wsapi.Store', { // create 
                 model: 'User Story',
-                limit: Infinity,
+                limit: 200,
                 autoLoad: true,
                 filters: myFilters,
                 listeners: {
                     load: function (myStore, myData, success) {
                         console.log('got data!', myStore, myData);
                         if (!me.userStoryGrid) {
-                            me._createGrid(myStore);
+                            me._createGrid(myStore, myData);
                         }
                     },
                     scope: me
@@ -181,20 +82,176 @@ Ext.define('CustomApp', {
             });
         }
     },
-    _createGrid: function (myuserStoryStore) {
-        console.log(this.myCols);
-        var userStoryGrid = Ext.create('Rally.ui.grid.Grid', {
-            store: myuserStoryStore,
-            columnCfgs: this.myCols
-        });
+
+    _mask: function () {
+        //this.add(Ext.create('App.Loader')._build('bar'));
+    },
+    _createGrid: function (myStore, myData) {
+        var xData1 = this.getContext().getUser();
+        var xData2 = this.getContext().getProject();
+        var xData3 = this.getContext().getWorkspace();
+        var appVersion = Ext.create('App.System')._this_Application_Details('inapp');
+        var myColours_Barclays = Ext.create('App.Config').PbarclaysColours_5
+        var bodyStyle = 'font-size:20px;padding:10px; color:' + myColours_Barclays[3] + ';';
+        var tabColour_1 = myColours_Barclays[0];
+        var tabColour_2 = myColours_Barclays[0];
+        var tabColour_3 = myColours_Barclays[0];
+        var panelBaseColor = myColours_Barclays[0];
+        var colour_Background_Darken = Ext.create('App.Tools')._shadeBlendConvert(panelBaseColor, -20);
+        var colour_Background = 'background: repeating-linear-gradient(  -45deg,  ' + panelBaseColor + ',' + panelBaseColor + ' 10px,  ' + colour_Background_Darken + ' 10px,  ' + colour_Background_Darken + ' 20px);';
+
+
+        //PbarclaysColours_5: ['#145FAC', '#437EA0', '#00AEEF', '#FFF', '#FFA000'],
+
         var viewport = Ext.create('Ext.container.Viewport', {
-            layout: 'fit',
-            items: [userStoryGrid]
+            items: [{
+                region: 'north',
+                collapsible: true,
+                items: [{
+                    xtype: 'tabpanel',
+                    width: '100%',
+                    items: [{
+                        title: 'About',
+                        width: '100%',
+                        html: 'This custom page display artifacts that are considered to be orphaned',
+                        height: 50,
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: tabColour_1,
+                            }
+                        },
+                        /*
+                        buttons: [{
+                            text: 'Button 1'
+                        }]
+                        */
+                    }, {
+                        title: 'Version',
+                        width: '100%',
+                        html: appVersion[2] + ' ' + appVersion[4] + ' ' + appVersion[3] + ' ' + appVersion[6],
+                        height: 50,
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: tabColour_2,
+                            }
+                        },
+                    }, {
+                        title: 'Support',
+                        width: '100%',
+                        height: 50,
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: tabColour_3,
+                            }
+                        },
+                        items: [{
+                            xtype: 'button',
+                            text: 'Support',
+                            height: 25,
+                            style: {
+                                backgroundColor: 'red',
+                            },
+                            listeners: {
+                                afterrender: function (v) {
+                                    v.el.on('click', function () {
+                                        console.log('[ ' + myStore + ' ] Clicked ');
+                                        Ext.create('App.Emailer')._emailer(myData, xData1, xData2, xData3);
+                                    });
+                                },
+                                scope: this
+                            },
+                        }]
+                    }]
+                }]
+            }, {
+                region: 'south',
+                layout: 'fit',
+                flex: 1,
+                items: [{
+
+                    xtype: 'tabpanel',
+                    width: '100%',
+                    items: [{
+                        title: 'User Stories',
+                        width: '100%',
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                        items: [{
+                            xtype: 'rallygrid',
+                            store: myStore,
+                            height: '100%',
+                            columnCfgs: this.myCols,
+                        }]
+                    }, {
+                        title: 'Features',
+                        width: '100%',
+                        html: 'X',
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                    }, {
+                        title: 'Features',
+                        width: '100%',
+                        html: 'X',
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                    }, {
+                        title: 'Business outcomes',
+                        width: '100%',
+                        html: 'X',
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                    }, {
+                        title: 'Portfolio Objectives',
+                        width: '100%',
+                        html: 'X',
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                    }, {
+                        title: 'Strategic Objectives',
+                        width: '100%',
+                        html: 'X',
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                    }],
+
+
+                }]
+            }]
         });
-        console.log('GRID ', this.myFetch);
-        Ext.fly('myTarget').update(viewport);
-
-
-
     },
 });

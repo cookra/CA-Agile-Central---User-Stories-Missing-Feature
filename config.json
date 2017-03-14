@@ -4,9 +4,16 @@
     "server": "https://rally1.rallydev.com",
     "sdk": "2.1",
     "javascript": [
-        "App.js"
+        "App.js",
+        "app/Layout.js",
+        "app/Config.js",
+        "app/Emailer.js",
+        "app/System.js",
+        "app/Loader.js",
+        "app/Tools.js"
     ],
     "css": [
-        "css/App.css"
+        "css/App.css",
+        "css/Loader.css"
     ]
 }

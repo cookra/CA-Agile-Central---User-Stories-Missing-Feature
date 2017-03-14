@@ -9,130 +9,51 @@
         Rally.onReady(function () {
                 // R Cook
 // v1.0.1
-// 2017-02-21
+// 2017-03-02
 // Template script to load a viewport with 5 panels
 Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
-    theFetch: ['FormattedID',
-        'Name',
-        'Project',
-        'Owner',
-        'Size',
-        'DisplayColor',
-        'State',
-        'PreliminaryEstimate',
-        'Parent',
-        'ActualStartDate',
-        'ActualEndDate',
-        'PlannedStartDate',
-        'PlannedEndDate',
-        'c_QRWP',
-        'PortfolioItemType',
-        'c_OrderBookNumberOBN'
-    ],
-    items: [ // pre-define the general layout of the app; the skeleton (ie. header, content, footer)
-        {
-            xtype: 'container', // this container lets us control the layout of the pulldowns; they'll be added below
-            itemId: 'pulldown-container',
-            margin: '5 5 5 5',
-            layout: {
-                type: 'hbox', // 'horizontal' layout
-                align: 'stretch'
-            }
-        }, {
-            xtype: 'box',
-            id: 'myTarget',
-            autoScroll: true,
-            margin: '10 5 5 10',
-            width: '100%',
-            style: {
-                borderTop: '1'
-            },
-            autoEl: {
-                tag: 'div',
-                cls: 'myContent',
-                html: '',
-            },
-            listeners: {
-                add: function () {
-                    console.log('@ Launch Added Content Box');
-                },
-                scope: this
-            },
-            flex: 1
-        }
+    myFetch: [],
+    myCols: [],
+    // Filter theFetch
+    // 0 -> Hide columns
+    // 1 -> Add Column
+    // 1/0 -> Both will be fetched from the query
+    dataList: [
+        [1, 'FormattedID'],
+        [1, 'Name'],
+        [1, 'Project'],
+        [1, 'Owner'],
+        [1, 'CreatedDate'],
+        [1, 'DisplayColor'],
+        [1, 'ScheduleState'],
+        [1, 'Blocked'],
+        [1, 'DirectChildrenCount'],
+        [1, 'Defects'],
+        [1, 'Iteration'],
+        [1, 'PlanEstimate'],
+        [1, 'Predecessors'],
+        [1, 'Successors'],
+        [1, 'Release'],
+        [1, 'TestCases'],
     ],
     launch: function () {
-        console.log('\033[2J');
+        this._mask();
+        console.log('\033[2J'); // clear the console
         var me = this;
-        var xData1 = this.getContext().getUser();
-        var xData2 = this.getContext().getProject();
-        var xData3 = this.getContext().getWorkspace();
-        var xData4 = this.getContext().getSubscription();
-        //var gEpros = App.Emailer; // shorten global property string
-        // var gRpros = App.Runtime; // shorten global property string
-        var layout = Ext.create('Ext.container.Container', {
-            layout: 'fit',
-            align: 'stretch',
-            height: '100%',
-            layoutConfig: {
-                align: 'stretch',
-            },
-            items: [{
-                xtype: 'panel',
-                width: 300,
-                border: false,
-                layout: 'hbox',
-                html: '',
-                id: 'myHeader',
-                itemId: 'header',
-                height: 300,
-                listeners: {
-                    afterrender: function () {
-                        console.log('@ Launch Added Panel');
-                        me._loadData();
-                    },
-                    scope: me
-                },
-                items: [{
-                    xtype: 'button',
-                    text: 'Support',
-                    margin: '5 5 5 20',
-                    listeners: {
-                        afterrender: function (v) {
-                            v.el.on('click', function () {
-                                var email = new gEpros._emailer(MySharedData.supportArray, xData1, xData2, xData3, xData4);
-                                console.log('@ Launch Added Support Button');
-                            });
-                        },
-                        scope: me
-                    }
-                }],
-            }, {
-                xtype: 'box',
-                id: 'myTarget',
-                autoScroll: true,
-                margin: '10 5 5 10',
-                width: '100%',
-                style: {
-                    borderTop: '1'
-                },
-                autoEl: {
-                    tag: 'div',
-                    cls: 'myContent',
-                    html: '',
-                },
-                listeners: {
-                    add: function () {
-                        console.log('@ Launch Added Content Box');
-                    },
-                    scope: me
-                },
-                flex: 1
-            }]
-        });
-        this.add(layout);
+        for (var j = 0; j < this.dataList.length; j++) {
+            if (this.dataList[j][0] === 1) {
+                this.myFetch.push(this.dataList[j][1]);
+                this.myCols.push(this.dataList[j][1]);
+                console.log('@ _launch Filter Fetch (+) ', this.dataList[j][1]);
+            }
+            if (this.dataList[j][0] === 0) {
+                this.myFetch.push(this.dataList[j][1]);
+                console.log('@ _launch Filter Fetch (-) ', this.dataList[j][1]);
+            }
+        }
+        this._loadData();
     },
     _getFilters: function () {
         var myFilter = Ext.create('Rally.data.wsapi.Filter', {
@@ -154,42 +75,515 @@ Ext.define('CustomApp', {
             console.log('creating store');
             me.userStoryStore = Ext.create('Rally.data.wsapi.Store', { // create 
                 model: 'User Story',
-                limit: Infinity,
+                limit: 200,
                 autoLoad: true,
                 filters: myFilters,
                 listeners: {
                     load: function (myStore, myData, success) {
                         console.log('got data!', myStore, myData);
                         if (!me.userStoryGrid) {
-                            me._createGrid(myStore);
+                            me._createGrid(myStore, myData);
                         }
                     },
                     scope: me
                 },
-                fetch: ['FormattedID', 'Name', 'Feature', 'Parent']
+                fetch: this.myFetch
             });
         }
     },
-    _createGrid: function (myuserStoryStore) {
-        var me = this;
-        var userStoryGrid = Ext.create('Rally.ui.grid.Grid', {
-            store: myuserStoryStore,
-            columnCfgs: [
-                'FormattedID', 'Name', 'Feature', 'Parent'
-            ]
-        });
-        var viewport = Ext.create('Ext.layout.container.Box', {
-            layout: 'fit',
-            align: 'stretch',
-            height: '100%',
-            items: [userStoryGrid]
-        });
-        console.log(userStoryGrid);
-        Ext.fly('myTarget').update(viewport);
 
-
-
+    _mask: function () {
+        //this.add(Ext.create('App.Loader')._build('bar'));
     },
+    _createGrid: function (myStore, myData) {
+        var xData1 = this.getContext().getUser();
+        var xData2 = this.getContext().getProject();
+        var xData3 = this.getContext().getWorkspace();
+        var appVersion = Ext.create('App.System')._this_Application_Details('inapp');
+        var myColours_Barclays = Ext.create('App.Config').PbarclaysColours_5
+        var bodyStyle = 'font-size:20px;padding:10px; color:' + myColours_Barclays[3] + ';';
+        var tabColour_1 = myColours_Barclays[0];
+        var tabColour_2 = myColours_Barclays[0];
+        var tabColour_3 = myColours_Barclays[0];
+        var panelBaseColor = myColours_Barclays[0];
+        var colour_Background_Darken = Ext.create('App.Tools')._shadeBlendConvert(panelBaseColor, -20);
+        var colour_Background = 'background: repeating-linear-gradient(  -45deg,  ' + panelBaseColor + ',' + panelBaseColor + ' 10px,  ' + colour_Background_Darken + ' 10px,  ' + colour_Background_Darken + ' 20px);';
+
+
+        //PbarclaysColours_5: ['#145FAC', '#437EA0', '#00AEEF', '#FFF', '#FFA000'],
+
+        var viewport = Ext.create('Ext.container.Viewport', {
+            items: [{
+                region: 'north',
+                collapsible: true,
+                items: [{
+                    xtype: 'tabpanel',
+                    width: '100%',
+                    items: [{
+                        title: 'About',
+                        width: '100%',
+                        html: 'This custom page display artifacts that are considered to be orphaned',
+                        height: 50,
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: tabColour_1,
+                            }
+                        },
+                        /*
+                        buttons: [{
+                            text: 'Button 1'
+                        }]
+                        */
+                    }, {
+                        title: 'Version',
+                        width: '100%',
+                        html: appVersion[2] + ' ' + appVersion[4] + ' ' + appVersion[3] + ' ' + appVersion[6],
+                        height: 50,
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: tabColour_2,
+                            }
+                        },
+                    }, {
+                        title: 'Support',
+                        width: '100%',
+                        height: 50,
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: tabColour_3,
+                            }
+                        },
+                        items: [{
+                            xtype: 'button',
+                            text: 'Support',
+                            height: 25,
+                            style: {
+                                backgroundColor: 'red',
+                            },
+                            listeners: {
+                                afterrender: function (v) {
+                                    v.el.on('click', function () {
+                                        console.log('[ ' + myStore + ' ] Clicked ');
+                                        Ext.create('App.Emailer')._emailer(myData, xData1, xData2, xData3);
+                                    });
+                                },
+                                scope: this
+                            },
+                        }]
+                    }]
+                }]
+            }, {
+                region: 'south',
+                layout: 'fit',
+                flex: 1,
+                items: [{
+
+                    xtype: 'tabpanel',
+                    width: '100%',
+                    items: [{
+                        title: 'User Stories',
+                        width: '100%',
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                        items: [{
+                            xtype: 'rallygrid',
+                            store: myStore,
+                            height: '100%',
+                            columnCfgs: this.myCols,
+                        }]
+                    }, {
+                        title: 'Features',
+                        width: '100%',
+                        html: 'X',
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                    }, {
+                        title: 'Features',
+                        width: '100%',
+                        html: 'X',
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                    }, {
+                        title: 'Business outcomes',
+                        width: '100%',
+                        html: 'X',
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                    }, {
+                        title: 'Portfolio Objectives',
+                        width: '100%',
+                        html: 'X',
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                    }, {
+                        title: 'Strategic Objectives',
+                        width: '100%',
+                        html: 'X',
+                        bodyStyle: colour_Background + bodyStyle,
+                        cls: 'fixTabMargins',
+                        tabConfig: {
+                            style: {
+                                background: '#808080',
+                            }
+                        },
+                    }],
+
+
+                }]
+            }]
+        });
+    },
+});
+                Ext.define('App.Layout', {
+    _create: function (o) {
+        if (o.type === 'btn') {
+            console.log(o);
+            var object = Ext.create('Ext.button.Button', {
+                text: o.text,
+                margin: o.margin,
+                cls: o.cls,
+                style: {
+                    backgroundColor: o.color,
+                },
+                listeners: {
+                    afterrender: function (v) {
+                        v.el.on('click', function () {
+                            console.log('[' + o.type + '] Clicked');
+                            Ext.create('App.Emailer')._emailer(MySharedData.supportArray, a_context_User, a_context_Project, a_context_Workspace);
+                        });
+                    },
+                    scope: this
+                },
+            });
+            return object;
+        } else if (o.type === 'con') {
+            console.log('CONTAINER ',o);
+            var object = Ext.create('Ext.container.Container', {
+                layout: o.layout,
+                align: o.align,
+                height: o.height,
+                width: o.height,
+                border: o.border,
+                id: o.id,
+                itemId: o.itemId,
+                margin: o.margin,
+                padding: o.padding,
+                html: o.html,
+                cls: o.cls,
+                style: {
+                    background: o.bg_color,
+                },
+                layoutConfig: {
+                    align: o.align,
+                },
+            });
+            return object;
+        } else if (o.type === 'pan') {
+            console.log(o);
+            var object = Ext.create('Ext.panel.Panel', {
+                layout: o.layout,
+                align: o.align,
+                height: o.height,
+                width: o.width,
+                border: o.border,
+                id: o.id,
+                itemId: o.itemId,
+                margin: o.margin,
+                padding: o.padding,
+                html: o.html,
+                bodyPadding: o.bodyPadding,
+                cls: o.cls,
+                flex: o.flex,
+                style: {
+                    background: o.color,
+                },
+            });
+            return object;
+        } else if (o.type === 'udd') {
+            console.log(o);
+            var object = Ext.create('Rally.ui.combobox.UserSearchComboBox', {
+                storeConfig: {
+                    model: o.model
+                },
+                fieldLabel: o.fieldLabel,
+                project: o.project,
+                itemId: o.itemId,
+                id: o.id,
+                margin: o.margin,
+                noEntryText: '-- All --',
+                defaultSelectionPosition: 'first',
+                listeners: {
+                    select: function () {
+                        console.log('clicked');
+                        this._mask('myInfoPanel');
+                        this._kickoff('User');
+                    },
+                    scope: this
+                }
+            });
+            return object;
+        } else if (o.type === 'idd') {
+            console.log(o);
+            var object = Ext.create('Rally.ui.combobox.PortfolioItemTypeComboBox', {
+
+                itemId: o.itemId,
+                fieldLabel: o.fieldLabel,
+                labelAlign: o.labelAlign,
+                id: o.id,
+                margin: o.margin,
+                listeners: {
+                    select: function () {
+                        console.log('clicked');
+                        this._mask('myInfoPanel');
+                        this._kickoff('User');
+                    },
+                    scope: this
+                }
+            });
+            return object;
+        } else if (o.type === 'ser') {
+            console.log(o);
+            var object = Ext.create('Rally.ui.combobox.SearchComboBox', {
+                storeConfig: {
+                    model: o.model
+                },
+                itemId: o.itemId,
+                fieldLabel: o.fieldLabel,
+                labelAlign: o.labelAlign,
+                id: o.id,
+                margin: o.margin,
+                width: o.width,
+                listeners: {
+                    specialkey: function (field, e) {
+                        if (e.getKey() === e.ENTER) {
+                            console.log('enter');
+                            this._mask('myInfoPanel');
+                            this._kickoff('Search');
+                        }
+                    },
+                    select: function () {
+                        console.log('select');
+                        this._mask('myInfoPanel');
+                        this._kickoff('Search');
+                    },
+                    scope: this
+                }
+            });
+            return object;
+        }else if (o.type === 'box') {
+            console.log(o);
+            var object = Ext.create('Ext.Component', {
+                height: o.height,
+                width: o.width,
+                id: o.id,
+                margin: o.margin,
+                autoEl: {
+                    tag: 'div',
+                    cls: 'myInfoPanel',
+                    html: "",
+                },
+                flex:1,
+            });
+            return object;
+        }
+    }
+});
+                Ext.define('App.Config', {
+    config: {
+        // Versioning
+        Pversion: 'v4.2b',
+        PappID: 'AC Orphaned Objects',
+        Powner: 'Richard Cook',
+        PreleaseDate: '2017-03-13: 23:54 GMT',
+        Pdescription: 'AC Orphaned Objects',
+        // Git Repo Details
+        PrepoAddress: 'not shared',
+        // Emailer Contact Details
+        pEmailSupportMessage: '*** [AC AC Orphaned Objects] Custom Application AC Support Request',
+        pEmailSupportAddress: 'richard.cook@barclaycard.co.uk',
+        pEmailerMessage: '========== Please add your comments above this line ==========',
+        // Rally Colours
+        PrallyColours_10: ['#0096DB', '#004A9D', '#FF3C00', '#FF8D00', '#FFDC00', '#6F7376', '#FFF', '#FF0069', '#41006E', '#00710C'],
+        // Barclays Colours
+        PbarclaysColours_5: ['#145FAC', '#437EA0', '#00AEEF', '#FFF', '#FFA000'],
+        // Bits we need
+        pInfoHtml: '',
+        pCardHtml: '',
+        pStoreData: '',
+        // Needs automating!
+        portfolioType: [
+            'PortfolioItem/BUStrategicObjectives',
+            'PortfolioItem/STPortfolioObjectives',
+            'PortfolioItem/PortfolioEpic',
+            'PortfolioItem/BusinessOutcome',
+            'PortfolioItem/Feature',
+        ], // Portfolio Types
+    },
+    constructor: function (config) {
+        this.initConfig(config);
+    },
+});
+                Ext.define('App.Emailer', {
+    _emailer: function (application_Output_Array, context_User, context_Project, context_Workspace) {
+        var string, subject;
+        subject = Ext.create('App.Config').pEmailSupportMessage;
+        string = '\r\n';
+        string += '\r\n';
+        string += '\r\n';
+        string += Ext.create('App.Config').pEmailerMessage;
+        string += '\r\n';
+        string += Ext.create('App.System')._this_Application_Details('email');
+        string += Ext.create('App.System')._user_Vars();
+        string += Ext.create('App.System')._user_Rally_Vars(context_User, context_Project, context_Workspace);
+        string += Ext.create('App.System')._this_Application_Output(application_Output_Array);
+        console.log(string);
+        string = encodeURIComponent(string);
+        window.location = 'mailto:' + Ext.create('App.Config').pEmailSupportAddress + '?subject=' + subject + '&body=' + string;
+    },
+});
+                Ext.define('App.System', {
+    // Created by Richard Cook ::: Cookra Limited
+    // Barclaycard richard.cook@barclaycard.co.uk
+    // v4.8
+    // Updated 2017-03-08
+    _this_Application_Details: function (type) {
+        var Output;
+        var a = [];
+        a.push('> - - - - - - - - - - < Application Details');
+        a.push('> App Name : ' + 'Orphaned Items');
+        a.push('> App Version : ' + 'v4.1b');
+        a.push('> App Version Status : ' + 'beta');
+        a.push('> App Designer : ' + 'Richard Cook');
+        a.push('> App Description : ' + 'Custom Ext JS Application that displays orphaned artifacts');
+        a.push('> App Release Date : ' + '2017-03-13');
+        if(type==='email'){
+            output = Ext.create('App.Tools')._common_Array_Outputter(a);
+        }else if(type==='inapp'){
+            output = a;
+        }
+        return output;
+    },
+    _this_Application_Output: function (array) {
+        var a = [];
+        console.log('xxx ',array);
+        a.push('> - - - - - - - - - - < Application Output');
+        for (var i = 0; i < array.length; i++) {
+            a.push('> FormattedID : ' + array[i].raw.FormattedID + ' Name : ' + array[i].raw.Name + ' _Ref : ' + array[i].raw._ref);
+        }
+        array = undefined;
+        return Ext.create('App.Tools')._common_Array_Outputter(a);
+    },
+    _user_Vars: function () {
+        var a = [];
+        a.push('> - - - - - - - - - - < Local Details');
+        a.push('> Browser Web App Name : ' + navigator.appName);
+        a.push('> Browser User Agent : ' + navigator.userAgent);
+        a.push('> Browser Version : ' + navigator.appVersion);
+        a.push('> Browser Code Name : ' + navigator.appCodeName);
+        a.push('> Platform : ' + navigator.platform);
+        a.push('> OS CPU : ' + navigator.oscpu);
+        a.push('> Cookies : ' + navigator.cookieEnabled);
+        a.push('> Outer Width : ' + window.outerWidth);
+        a.push('> Outer Height : ' + window.outerHeight);
+        a.push('> Inner Width : ' + window.innerWidth);
+        a.push('> Inner Height : ' + window.innerHeight);
+        a.push('> Base URI : ' + document.getElementsByTagName('script')[0].baseURI);
+        a.push('> SRC : ' + document.getElementsByTagName('script')[0].src);
+        a.push('> LocalName : ' + document.getElementsByTagName('script')[0].localName);
+        a.push('> Type : ' + document.getElementsByTagName('script')[0].type);
+        return Ext.create('App.Tools')._common_Array_Outputter(a);
+    },
+    _user_Rally_Vars: function (context_User, context_Project, context_Workspace) {
+        var a = [];
+        a.push('> - - - - - - - - - - < User Details');
+        a.push('> AC User Username : ' + context_User.UserName);
+        a.push('> AC User Name : ' + context_User._refObjectName);
+        a.push('> AC User Role : ' + context_User.Role);
+        a.push('> AC Application Launched From Node : ' + context_Project._refObjectName);
+        a.push('> AC Application Workspace Name : ' + context_Workspace._refObjectName);
+        a.push('> AC Application Workspace Date/Time Format : ' + context_Workspace.WorkspaceConfiguration.DateFormat);
+        return Ext.create('App.Tools')._common_Array_Outputter(a);
+    },
+});
+                Ext.define('App.Loader', {
+    _build: function (type) {
+        var output;
+        var colour_Array = Ext.create('App.Config').PrallyColours_10;
+        var colour_Norm = colour_Array[Math.floor((Math.random() * 10))];
+        var Colour_Dark = Ext.create('App.Tools')._shadeBlendConvert(colour_Norm, -30);
+        switch (type) {
+            case 'bar':
+                var html = 'style= "background-image: repeating-linear-gradient(-45deg,' + colour_Norm + ',' + colour_Norm + ' 11px,' + Colour_Dark + ' 10px,' + Colour_Dark + ' 20px")';
+                output = '<div class = "bar" ' + html + '></div>';
+                break;
+            case 'wave':
+                output = '<div class = "loader">Loading...</div>';
+                break;
+        }
+        return output;
+    }
+});
+                Ext.define('App.Tools', {
+    _shadeBlendConvert: function (color, percent) {
+        var R = parseInt(color.substring(1, 3), 16);
+        var G = parseInt(color.substring(3, 5), 16);
+        var B = parseInt(color.substring(5, 7), 16);
+        R = parseInt(R * (100 + percent) / 100);
+        G = parseInt(G * (100 + percent) / 100);
+        B = parseInt(B * (100 + percent) / 100);
+        R = (R < 255) ? R : 255;
+        G = (G < 255) ? G : 255;
+        B = (B < 255) ? B : 255;
+        var RR = ((R.toString(16).length === 1) ? "0" + R.toString(16) : R.toString(16));
+        var GG = ((G.toString(16).length === 1) ? "0" + G.toString(16) : G.toString(16));
+        var BB = ((B.toString(16).length === 1) ? "0" + B.toString(16) : B.toString(16));
+        return "#" + RR + GG + BB;
+    },
+    _common_Array_Outputter: function (array) {
+        var character_Return = '\r\n';
+        var l = array.length;
+        var output = '';
+        var padSize = String(l).length;
+        for (var x = 0; x < l; x++) {
+            output += '[#' + this._number_Pad(x, padSize) + '] ' + array[x] + character_Return;
+        }        
+        console.log(output);
+        array = undefined;
+        return output;
+    },
+    _number_Pad: function (num, size) {
+        return Array(Math.max(size - String(num).length + 1, 0)).join(0) + num;
+    }
 });
 
             Rally.launchApp('CustomApp', {
@@ -203,7 +597,98 @@ Ext.define('CustomApp', {
 
 
     <style type="text/css">
-        
+        .app {
+  /* Add app styles here */
+}
+.test {
+  background: #ff6600;
+}
+.fixTabMargins {
+  margin: 0;
+  padding: 0;
+}
+
+    </style>
+
+    <style type="text/css">
+        /* Bar */
+@keyframes move {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 28px 0;
+  }
+}
+.bar {
+  width: 100%;
+  height: 20px;
+  border: 1px solid #6B7CA4;
+  border-radius: 10px;
+  background-size: 28px 28px;
+  animation: move .5s linear infinite;
+}
+/* Bar 2 */
+.loader,
+.loader:before,
+.loader:after {
+  background: #437EA0;
+  -webkit-animation: load1 1s infinite ease-in-out;
+  animation: load1 1s infinite ease-in-out;
+  width: 1em;
+  height: 4em;
+}
+.loader {
+  color: #437EA0;
+  text-indent: -9999em;
+  margin: 88px auto;
+  position: relative;
+  font-size: 11px;
+  -webkit-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+.loader:before,
+.loader:after {
+  position: absolute;
+  top: 0;
+  content: '';
+}
+.loader:before {
+  left: -1.5em;
+  -webkit-animation-delay: -0.32s;
+  animation-delay: -0.32s;
+}
+.loader:after {
+  left: 1.5em;
+}
+@-webkit-keyframes load1 {
+  0%,
+  80%,
+  100% {
+    box-shadow: 0 0;
+    height: 4em;
+  }
+  40% {
+    box-shadow: 0 -2em;
+    height: 5em;
+  }
+}
+@keyframes load1 {
+  0%,
+  80%,
+  100% {
+    box-shadow: 0 0;
+    height: 4em;
+  }
+  40% {
+    box-shadow: 0 -2em;
+    height: 5em;
+  }
+}
+
     </style>
 </head>
 <body>

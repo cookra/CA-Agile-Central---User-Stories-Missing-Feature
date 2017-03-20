@@ -147,12 +147,18 @@ Ext.define('CustomApp', {
                         },
                         listeners: {
                             'activate': function () {
-                                console.log('test');
-                                this._loadData();
-                                //store2.load();
+                                console.log('Tab Story');
+                                var me = Ext.create('Rally.ui.grid.Grid', {
+                                    model: 'User Story',
+                                    limit: 200,
+                                    autoLoad: true,
+                                    // columnCfgs: this.myCols,
+                                    store: [this._loadData()],
+                                });
+                                console.log(me);
                             },
-                            scope:this
-                        }
+                            scope: this
+                        },
                     }, {
                         title: 'A',
                         width: '100%',
@@ -164,14 +170,6 @@ Ext.define('CustomApp', {
                                 background: '#808080',
                             },
                         },
-                        listeners: {
-                            'activate': function () {
-                                console.log('test');
-                                this._loadData();
-                                //store2.load();
-                            },
-                            scope:this
-                        }
                     }],
 
 
@@ -179,7 +177,7 @@ Ext.define('CustomApp', {
             }]
         });
         this.add(container);
-        this._mask();
+        //this._mask();
     },
     _getFilters: function () {
         var myFilter = Ext.create('Rally.data.wsapi.Filter', {
@@ -192,7 +190,7 @@ Ext.define('CustomApp', {
     _loadData: function () {
         var me = this;
         var myFilters = this._getFilters();
-        console.log('my filter', myFilters.toString());
+        console.log('My Data Called');
         if (me.userStoryStore) {
             console.log('store exists');
             me.userStoryStore.setFilter(myFilters);
@@ -203,13 +201,13 @@ Ext.define('CustomApp', {
                 model: 'User Story',
                 limit: 200,
                 autoLoad: true,
-                filters: myFilters,
+                filters: this._getFilters(),
                 listeners: {
-                    load: function (myStore, myData, success) {
+                    load: function (myStore, myData) {
                         console.log('got data!', myStore, myData);
-                        if (!me.userStoryGrid) {
-                            me._createGrid(myStore, myData);
-                        }
+                        return myStore;
+                        //me._createGrid(myStore, myData);
+
                     },
                     scope: me
                 },
